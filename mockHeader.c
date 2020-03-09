@@ -20,11 +20,11 @@ FILE *FILE_OUT; /* pointer to output file */
 int main(int argc, char *argv[]) {
 
    int telescope_id, machine_id, data_type, barycentre;
-   int pulsarcentre, nbits, nsamples, nchans, nifs, argument;
+   int pulsarcentre, nbits, nchans, nifs, argument;
    int RawDataFile, RefDM, Period;
    double az_start, za_start, src_raj, src_dej, tstart, tsamp, fch1, fo, refdm, period;
    double RAh, RAm, RAs, DecD, DecM, DecS;
-   char source_name[64], raw_data_file[128];
+   char source_name[64], raw_data_file[64];
    char RAtxt[16], DecTxt[16], out_filename[256];
    time_t GMT_Time; /* declare a variable 'GMT_Time' which is data type of 'time_t' to store calendar time */
    struct tm *Tm; /* structure tm contains a calendar date and time broken down into its components, global declaration of Tm as variable of tm type */
@@ -36,7 +36,6 @@ int main(int argc, char *argv[]) {
    barycentre = 0;
    pulsarcentre = 0;
    nbits = 8;
-   nsamples = 0;
    nchans = 2048;
    nifs = 1;
    strcpy(source_name, "J0000+0000");
@@ -99,12 +98,14 @@ int main(int argc, char *argv[]) {
             data_type = atoi(argv[argument+1]);
             argument++;
          } else if (strcmp(argv[argument], "-raw") == 0) {
-            strcpy(raw_data_file, argv[argument+1]);
+            //strcpy(raw_data_file, argv[argument+1]);
+            sprintf(raw_data_file, "%.63s", argv[argument+1]);
             argument++;
             RawDataFile = 1;
             printf("%s\n", raw_data_file);
          } else if (strcmp(argv[argument], "-source") == 0) {
-            strcpy(source_name, argv[argument+1]);
+            //strcpy(source_name, argv[argument+1]);
+            sprintf(source_name, "%.63s", argv[argument+1]);
             argument++;
          } else if (strcmp(argv[argument], "-bary") == 0)  {
             barycentre = atoi(argv[argument+1]);
@@ -119,7 +120,8 @@ int main(int argc, char *argv[]) {
             za_start = atof(argv[argument+1]);
             argument++;
          } else if (strcmp(argv[argument], "-ra") == 0) {
-            strcpy(RAtxt, argv[argument+1]);
+            //strcpy(RAtxt, argv[argument+1]);
+            sprintf(RAtxt, "%.15s", argv[argument+1]);
             sscanf(RAtxt, "%lf:%lf:%lf", &RAh, &RAm, &RAs);
             src_raj = (RAh * 10000.0) + (RAm * 100.0) + RAs;
             if (src_raj < 0.0 || src_raj > 240000.0) {
@@ -128,7 +130,8 @@ int main(int argc, char *argv[]) {
             }
             argument++;
          } else if (strcmp(argv[argument], "-dec") == 0) {
-            strcpy(DecTxt, argv[argument+1]);
+            //strcpy(DecTxt, argv[argument+1]);
+            sprintf(DecTxt, "%.15s", argv[argument+1]);
             sscanf(DecTxt, "%lf:%lf:%lf", &DecD, &DecM, &DecS);
             if (strncmp (DecTxt,"-",1) == 0) {
                src_dej = (DecD * -10000.0) + (DecM * -100.0) + (-1.0 * DecS);
@@ -175,7 +178,8 @@ int main(int argc, char *argv[]) {
          }
       }
    }
-   strcpy(out_filename, argv[argc-1]);
+   //strcpy(out_filename, argv[argc-1]);
+   sprintf(out_filename, "%.255s", argv[argc-1]);
    if ((FILE_OUT = fopen(out_filename, "w")) == NULL) {
       fprintf(stderr, "%s> Unable to open file %s\n", argv[0], out_filename);
       return -1;
