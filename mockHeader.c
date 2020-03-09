@@ -265,3 +265,4 @@ double gregjd(int jy, int jm, int jd, double rh, double rm, double rs) {
    tjd=floor(365.25*y) + floor(30.6001*(m+1)) + rj +1720994.5 + rb;
    return tjd;
 }
+
