@@ -12,7 +12,7 @@ void send_long(char *name, long integer); /* ditto */
 void send_int(char *name, int integer); /* ditto */
 void send_coords(double raj, double dej, double az, double za); /* ditto */
 double gregjd(int jy, int jm, int jd, double rh, double rm, double rs); /* convert date to Julian Date */
-
+int readFreqTable(char *location, double *frequency_array); /* read the frequency table at a speficied location, return number of frequencies sampled */
 /* ... AND GLOBAL VARIABLES */
 FILE *FILE_OUT; /* pointer to output file */
 
@@ -21,11 +21,12 @@ int main(int argc, char *argv[]) {
 
    int telescope_id, machine_id, data_type, barycentre;
    int pulsarcentre, nbits, nchans, nifs, argument;
-   int RawDataFile, RefDM, Period;
+   int RawDataFile, RefDM, Period, FreqTable = 0, frequencies;
    double az_start, za_start, src_raj, src_dej, tstart, tsamp, fch1, fo, refdm, period;
    double RAh, RAm, RAs, DecD, DecM, DecS;
+   double *freqTable;
    char source_name[64], raw_data_file[64];
-   char RAtxt[16], DecTxt[16], out_filename[256];
+   char RAtxt[16], DecTxt[16], out_filename[256], infreqtable_filename[1024];
    time_t GMT_Time; /* declare a variable 'GMT_Time' which is data type of 'time_t' to store calendar time */
    struct tm *Tm; /* structure tm contains a calendar date and time broken down into its components, global declaration of Tm as variable of tm type */
 
@@ -81,6 +82,7 @@ int main(int argc, char *argv[]) {
       printf("-nifs     Number of seperate IF channels (default: %d)\n", nifs);
       printf("-refdm    Reference dispersion measure in pc/ccm (default: unset)\n");
       printf("-period   Folding period in sec (default: unset)\n");
+      printf("-freqtab  Specific an input frequency table (file of newline-separated frequencies in MHz (default: unset)\n");
       printf("-h        Display this useful help page\n\n");
       return -1;
    }
@@ -172,6 +174,10 @@ int main(int argc, char *argv[]) {
             period = atof(argv[argument+1]);
             Period = 1;
             argument++;
+         } else if (strcmp(argv[argument], "-freqtab") == 0) {
+            sprintf(infreqtable_filename, "%.1023s", argv[argument+1]);
+            FreqTable = 1;
+            argument++;
          } else {
             fprintf(stderr, "Unknown option: %s\n", argv[argument]);
             return -1;
@@ -184,6 +190,10 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "%s> Unable to open file %s\n", argv[0], out_filename);
       return -1;
    }
+
+   if (FreqTable) {
+      frequencies = readFreqTable(infreqtable_filename, freqTable);
+   }
    send_string("HEADER_START");
    if (RawDataFile == 1) {
       send_string("rawdatafile"); /* setting... */
@@ -195,8 +205,14 @@ int main(int argc, char *argv[]) {
    send_int("telescope_id", telescope_id); /* ID of telescope */
    send_coords(src_raj, src_dej, az_start, za_start); /* RA (J2000), Dec (J2000), Az, ZA */
    send_int("data_type", data_type); /* data type */
-   send_double("fch1", fch1); /* centre frequency (MHz) of first filterbank channel */
-   send_double("foff", fo); /* filterbank channel bandwidth (MHz) */
+   if (FreqTable == 0) {
+      send_double("fch1", fch1); /* centre frequency (MHz) of first filterbank channel */
+      send_double("foff", fo); /* filterbank channel bandwidth (MHz) */
+   } else {
+      send_string("FREQUENCY_START");
+      for (int i = 0; i < frequencies; i++) send_double("", freqTable[i]);
+      send_string("FREQUENCY_END");
+   }
    send_int("nchans", nchans); /* number of filterbank channels */
    send_int("nbits", nbits); /* number of bits per time sample */
    send_double("tstart", tstart); /* time stamp (MJD) of first sample */
@@ -228,7 +244,7 @@ void send_float(char *name, float floating_point) {
 }
 
 void send_double (char *name, double double_precision) {
-   send_string(name);
+   if (strcmp(name, "") == 0) send_string(name);
    fwrite(&double_precision, sizeof(double), 1, FILE_OUT);
 }
 
@@ -270,3 +286,27 @@ double gregjd(int jy, int jm, int jd, double rh, double rm, double rs) {
    return tjd;
 }
 
+
+int readFreqTable(char *location, double *frequency_array) {
+   FILE *fp = fopen(location, "r");
+
+   if (fp == NULL) {
+      fprintf(stderr, "Unable to open frequencies file. Exiting.\n");
+      exit(1);
+   }
+
+   int frequencies_sampled = 0;
+   double tmpvar;
+
+   while (fscanf(fp, "%lf\n", &tmpvar) != EOF) {
+      frequencies_sampled++;
+   }
+   fseek(fp, 0, SEEK_SET);
+
+   frequency_array = (double*) calloc(frequencies_sampled, sizeof(double));
+   for (int i = 0; i < frequencies_sampled; i++) {
+      fscanf(fp, "%lf\n", &(frequency_array[frequencies_sampled]));
+   }
+
+   return frequencies_sampled;
+}
