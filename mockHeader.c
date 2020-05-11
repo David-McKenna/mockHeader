@@ -244,7 +244,7 @@ void send_float(char *name, float floating_point) {
 }
 
 void send_double (char *name, double double_precision) {
-   if (strcmp(name, "") == 0) send_string(name);
+   if (strcmp(name, "") != 0) send_string(name);
    fwrite(&double_precision, sizeof(double), 1, FILE_OUT);
 }
 
