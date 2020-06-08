@@ -231,11 +231,7 @@ int main(int argc, char *argv[]) {
    }
 
    if(Signed != 0) {
-      if (Signed == -1) {
-         send_int("signed", 0);
-      } else {
-         send_int("signed", 1);
-      }
+      send_int("signed", Signed);
    }
    send_string("HEADER_END");
 
