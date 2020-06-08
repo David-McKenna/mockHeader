@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
    int telescope_id, machine_id, data_type, barycentre;
    int pulsarcentre, nbits, nchans, nifs, argument;
-   int RawDataFile, RefDM, Period, FreqTable = 0, frequencies;
+   int RawDataFile, RefDM, Period, FreqTable = 0, frequencies, Signed;
    double az_start, za_start, src_raj, src_dej, tstart, tsamp, fch1, fo, refdm, period;
    double RAh, RAm, RAs, DecD, DecM, DecS;
    double *freqTable;
@@ -54,6 +54,7 @@ int main(int argc, char *argv[]) {
    period = 0.0;
    RawDataFile = 0;
    RefDM = 0;
+   Signed = 0;
 
    /* AVAILABLE HELP */
    if (argc < 2 || (strcmp(argv[1], "-h") == 0)) { /* in case there is a -h switch */
@@ -83,6 +84,7 @@ int main(int argc, char *argv[]) {
       printf("-refdm    Reference dispersion measure in pc/ccm (default: unset)\n");
       printf("-period   Folding period in sec (default: unset)\n");
       printf("-freqtab  Specific an input frequency table (file of newline-separated frequencies in MHz (default: unset)\n");
+      printf("-signed   -1: Send an unsigned int, +1: Send a signed int (default: none)");
       printf("-h        Display this useful help page\n\n");
       return -1;
    }
@@ -223,6 +225,14 @@ int main(int argc, char *argv[]) {
    }
    if (RefDM == 1) {
       send_double("refdm", refdm); /* time interval between samples (s) */
+   }
+
+   if(Signed != 0) {
+      if (Signed == -1) {
+         send_int("signed", 0);
+      } else {
+         send_int("signed", 1);
+      }
    }
    send_string("HEADER_END");
 
