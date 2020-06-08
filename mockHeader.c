@@ -180,6 +180,9 @@ int main(int argc, char *argv[]) {
             sprintf(infreqtable_filename, "%.1023s", argv[argument+1]);
             FreqTable = 1;
             argument++;
+         } else  if (strcmp(argv[argument], "-signed") == 0) {
+            Signed = atoi(argv[argument+1]);
+            argument++;
          } else {
             fprintf(stderr, "Unknown option: %s\n", argv[argument]);
             return -1;
