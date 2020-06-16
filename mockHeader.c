@@ -12,7 +12,7 @@ void send_long(char *name, long integer); /* ditto */
 void send_int(char *name, int integer); /* ditto */
 void send_coords(double raj, double dej, double az, double za); /* ditto */
 double gregjd(int jy, int jm, int jd, double rh, double rm, double rs); /* convert date to Julian Date */
-int readFreqTable(char *location, double *frequency_array); /* read the frequency table at a speficied location, return number of frequencies sampled */
+double* readFreqTable(char *location); /* read the frequency table at a speficied location, return number of frequencies sampled */
 /* ... AND GLOBAL VARIABLES */
 FILE *FILE_OUT; /* pointer to output file */
 
@@ -197,7 +197,8 @@ int main(int argc, char *argv[]) {
    }
 
    if (FreqTable) {
-      frequencies = readFreqTable(infreqtable_filename, freqTable);
+      freqTable = readFreqTable(infreqtable_filename);
+      frequencies = (int) freqTable[0];
    }
    send_string("HEADER_START");
    if (RawDataFile == 1) {
@@ -213,12 +214,13 @@ int main(int argc, char *argv[]) {
    if (FreqTable == 0) {
       send_double("fch1", fch1); /* centre frequency (MHz) of first filterbank channel */
       send_double("foff", fo); /* filterbank channel bandwidth (MHz) */
+      send_int("nchans", nchans); /* number of filterbank channels */
    } else {
       send_string("FREQUENCY_START");
-      for (int i = 0; i < frequencies; i++) send_double("", freqTable[i]);
+      for (int i = 1; i < frequencies + 1; i++) send_double("fchannel", freqTable[i]);
       send_string("FREQUENCY_END");
+      send_int("nchans", frequencies); /* number of filterbank channels */
    }
-   send_int("nchans", nchans); /* number of filterbank channels */
    send_int("nbits", nbits); /* number of bits per time sample */
    send_double("tstart", tstart); /* time stamp (MJD) of first sample */
    send_double("tsamp", tsamp); /* time interval between samples (s) */
@@ -253,7 +255,7 @@ void send_float(char *name, float floating_point) {
 }
 
 void send_double (char *name, double double_precision) {
-   if (strcmp(name, "") != 0) send_string(name);
+   send_string(name);
    fwrite(&double_precision, sizeof(double), 1, FILE_OUT);
 }
 
@@ -296,8 +298,9 @@ double gregjd(int jy, int jm, int jd, double rh, double rm, double rs) {
 }
 
 
-int readFreqTable(char *location, double *frequency_array) {
+double* readFreqTable(char *location) {
    FILE *fp = fopen(location, "r");
+   static double* frequency_array;
 
    if (fp == NULL) {
       fprintf(stderr, "Unable to open frequencies file. Exiting.\n");
@@ -312,10 +315,11 @@ int readFreqTable(char *location, double *frequency_array) {
    }
    fseek(fp, 0, SEEK_SET);
 
-   frequency_array = (double*) calloc(frequencies_sampled, sizeof(double));
-   for (int i = 0; i < frequencies_sampled; i++) {
-      fscanf(fp, "%lf\n", &(frequency_array[frequencies_sampled]));
+   frequency_array = calloc(frequencies_sampled + 1, sizeof(double));
+   frequency_array[0] = frequencies_sampled;
+   for (int i = 1; i < frequencies_sampled + 1; i++) {
+      fscanf(fp, "%lf\n", &(frequency_array[i]));
    }
 
-   return frequencies_sampled;
+   return frequency_array;
 }
